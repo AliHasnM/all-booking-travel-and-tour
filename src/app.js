@@ -7,6 +7,7 @@ import userRouter from "./routes/user.routes.js";
 import travelCompanyRouter from "./routes/travelCompany.routes.js";
 import hotelRouter from "./routes/hotel.routes.js";
 import routeComapnyRouter from "./routes/routeCompany.routes.js";
+import roomHotelRouter from "./routes/roomHotel.routes.js";
 
 const app = express();
 
@@ -34,6 +35,7 @@ app.use("/api/v1/users", userRouter);
 app.use("/api/v1/travelCompany", travelCompanyRouter);
 app.use("/api/v1/routeCompany", routeComapnyRouter);
 app.use("/api/v1/hotel", hotelRouter);
+app.use("/api/v1/roomHotel", roomHotelRouter);
 
 // Error handling middleware
 app.use((req, res, next) => {
