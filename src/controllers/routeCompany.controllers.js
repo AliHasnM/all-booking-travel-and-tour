@@ -53,19 +53,7 @@ const createRoute = asyncHandler(async (req, res) => {
     .json(new ApiResponse(201, route, "Route created successfully"));
 });
 
-// Get all routes with optional pagination
-// export const getAllRoutes = async (req, res, next) => {
-//   try {
-//     const { page = 1, limit = 10 } = req.query;
-//     const routes = await Route.paginate({}, { page, limit });
-//     res
-//       .status(200)
-//       .json(new ApiResponse(200, routes, "Routes retrieved successfully"));
-//   } catch (error) {
-//     next(error);
-//   }
-// };
-const getAllRoutes = async (req, res, next) => {
+const getAllRoutes = asyncHandler(async (req, res, next) => {
   try {
     const { page = 1, limit = 10 } = req.query;
 
@@ -98,10 +86,10 @@ const getAllRoutes = async (req, res, next) => {
   } catch (error) {
     next(error);
   }
-};
+});
 
 // Get a specific route by ID
-export const getRouteById = async (req, res, next) => {
+const getRouteById = asyncHandler(async (req, res, next) => {
   try {
     const route = await Route.findById(req.params.routeId);
     if (!route) {
@@ -113,10 +101,10 @@ export const getRouteById = async (req, res, next) => {
   } catch (error) {
     next(error);
   }
-};
+});
 
 // Update Route details
-export const updateRoute = async (req, res, next) => {
+const updateRoute = asyncHandler(async (req, res, next) => {
   try {
     const route = await Route.findByIdAndUpdate(req.params.routeId, req.body, {
       new: true,
@@ -130,10 +118,10 @@ export const updateRoute = async (req, res, next) => {
   } catch (error) {
     next(error);
   }
-};
+});
 
 // Delete a Route
-export const deleteRoute = async (req, res, next) => {
+const deleteRoute = asyncHandler(async (req, res, next) => {
   try {
     const route = await Route.findByIdAndDelete(req.params.routeId);
     if (!route) {
@@ -145,6 +133,6 @@ export const deleteRoute = async (req, res, next) => {
   } catch (error) {
     next(error);
   }
-};
+});
 
-export { createRoute, getAllRoutes };
+export { createRoute, getAllRoutes, getRouteById, updateRoute, deleteRoute };
