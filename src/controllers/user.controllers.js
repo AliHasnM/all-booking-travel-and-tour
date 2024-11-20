@@ -3,6 +3,7 @@ import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
+import bcrypt from "bcrypt";
 
 // Function to generate access and refresh tokens
 const generateTokens = async (userId) => {
@@ -92,54 +93,142 @@ const registerUser = asyncHandler(async (req, res) => {
 });
 
 // Login user
+// const loginUser = asyncHandler(async (req, res) => {
+//   const { username, email, password } = req.body;
+
+//   // Ensure either username or email is provided
+//   if (!(username || email)) {
+//     throw new ApiError(400, "Username or email is required");
+//   }
+
+//   // Find the user by either username or email within contactInfo
+//   const user = await User.findOne({
+//     $or: [{ username }, { "contactInfo.email": email }],
+//   });
+
+//   // If the user is not found, return an error
+//   if (!user) {
+//     throw new ApiError(404, "User does not exist");
+//   }
+
+//   // Validate the provided password
+//   const isPasswordValid = await user.isPasswordCorrect(password);
+//   if (!isPasswordValid) {
+//     throw new ApiError(401, "Invalid credentials");
+//   }
+
+//   // Generate access and refresh tokens
+//   const { accessToken, refreshToken } = await generateTokens(user._id);
+
+//   // Find the logged-in user and exclude password and refreshToken fields
+//   const loggedInUser = await User.findById(user._id).select(
+//     "-password -refreshToken",
+//   );
+
+//   // Cookie options for storing tokens
+//   const cookieOptions = {
+//     httpOnly: true,
+//     secure: process.env.NODE_ENV === "production", // Secure only in production
+//     sameSite: "Strict",
+//   };
+
+//   // Send the tokens as cookies and user data as JSON, excluding sensitive fields
+//   return res
+//     .status(200)
+//     .cookie("accessToken", accessToken, cookieOptions)
+//     .cookie("refreshToken", refreshToken, cookieOptions)
+//     .json(
+//       new ApiResponse(
+//         200,
+//         {
+//           user: {
+//             ...loggedInUser.toObject(), // Ensure loggedInUser is a plain object
+//             role: user.role, // Add the role directly inside the user object
+//           },
+//           accessToken,
+//           refreshToken,
+//           id: user._id,
+//           username: user.username,
+//           email: user.email,
+//           role: user.role,
+//         },
+//         "Login successful",
+//       ),
+//     );
+// });
 const loginUser = asyncHandler(async (req, res) => {
   const { username, email, password } = req.body;
 
-  // Ensure either username or email is provided
-  if (!(username || email)) {
-    throw new ApiError(400, "Username or email is required");
+  if (!(username || email) || !password) {
+    throw new ApiError(400, "Username or email and password are required");
   }
 
-  // Find the user by either username or email within contactInfo
+  // Find the user by either username or email
   const user = await User.findOne({
     $or: [{ username }, { "contactInfo.email": email }],
   });
 
-  // If the user is not found, return an error
   if (!user) {
-    throw new ApiError(404, "User does not exist");
+    throw new ApiError(401, "Invalid credentials");
   }
 
-  // Validate the provided password
-  const isPasswordValid = await user.isPasswordCorrect(password);
-  if (!isPasswordValid) {
+  // Compare passwords
+  const isPasswordMatch = await bcrypt.compare(password, user.password);
+
+  if (!isPasswordMatch) {
     throw new ApiError(401, "Invalid credentials");
   }
 
   // Generate access and refresh tokens
-  const { accessToken, refreshToken } = await generateTokens(user._id);
-
-  // Find the logged-in user and exclude password and refreshToken fields
-  const loggedInUser = await User.findById(user._id).select(
-    "-password -refreshToken",
+  const accessToken = jwt.sign(
+    {
+      _id: user._id,
+      username: user.username,
+      role: user.role,
+    },
+    process.env.ACCESS_TOKEN_SECRET,
+    { expiresIn: "1d" },
   );
 
-  // Cookie options for storing tokens
+  const refreshToken = jwt.sign(
+    { _id: user._id },
+    process.env.REFRESH_TOKEN_SECRET,
+    { expiresIn: "7d" },
+  );
+
+  // Update user with the new refresh token in DB (optional)
+  user.refreshToken = refreshToken;
+  await user.save();
+
+  // Configure cookies
   const cookieOptions = {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production", // Secure only in production
+    secure: process.env.NODE_ENV === "production",
     sameSite: "Strict",
   };
 
-  // Send the tokens as cookies and user data as JSON, excluding sensitive fields
+  // Send response with cookies and accessToken
   res
     .status(200)
-    .cookie("accessToken", accessToken, cookieOptions)
-    .cookie("refreshToken", refreshToken, cookieOptions)
+    .cookie("accessToken", accessToken, { ...cookieOptions, maxAge: 3600000 }) // 1 hour
+    .cookie("refreshToken", refreshToken, {
+      ...cookieOptions,
+      maxAge: 604800000,
+    }) // 7 days
     .json(
       new ApiResponse(
         200,
-        { user: loggedInUser, accessToken, refreshToken },
+        {
+          user: {
+            _id: user._id,
+            username: user.username,
+            role: user.role,
+            contactInfo: user.contactInfo,
+            dateJoined: user.dateJoined,
+          },
+          accessToken, // Include accessToken in response as well
+          refreshToken,
+        },
         "Login successful",
       ),
     );
