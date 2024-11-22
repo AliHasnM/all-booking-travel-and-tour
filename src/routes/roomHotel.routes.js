@@ -14,7 +14,7 @@ const router = Router();
 router.use(verifyJWT);
 
 // Route to create a new room (accessible only to TravelCompany role)
-router.route("/create-room").post(checkRole("Hotel"), createRoom);
+router.route("/create-room/:hotelId").post(checkRole("Hotel"), createRoom);
 
 // Route to get all rooms with optional pagination
 router.route("/all-rooms").get(checkRole("Hotel"), getAllRooms);

@@ -4,28 +4,72 @@ import { ApiError } from "../utils/ApiError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
 // Create a new room
-const createRoom = asyncHandler(async (req, res) => {
-  const { hotelId, type, pricePerNight, availability } = req.body;
+// const createRoom = asyncHandler(async (req, res) => {
+//   const {hotelId} = req.params
+//   const { type, pricePerNight, availability } = req.body;
 
-  // Validate that all required fields are provided
-  if (!hotelId || !type || pricePerNight === undefined || !availability) {
-    throw new ApiError(
-      400,
-      "All fields (hotelId, type, pricePerNight, availability) are required",
-    );
+//   // Validate that all required fields are provided
+//   if (!hotelId || !type || pricePerNight === undefined || !availability) {
+//     throw new ApiError(
+//       400,
+//       "All fields (hotelId, type, pricePerNight, availability) are required",
+//     );
+//   }
+
+//   // Validate price
+//   if (pricePerNight < 0) {
+//     throw new ApiError(400, "Price per night cannot be negative");
+//   }
+
+//   // Validate availability dates
+//   if (!availability.from || !availability.to) {
+//     throw new ApiError(400, "Availability must include 'from' and 'to' dates");
+//   }
+
+//   // Create a new room from the request body
+//   const room = await Room.create({
+//     hotelId,
+//     type,
+//     pricePerNight,
+//     availability,
+//   });
+
+//   // Send a success response with the created room
+//   return res
+//     .status(201)
+//     .json(new ApiResponse(201, room, "Room created successfully"));
+// });
+const createRoom = asyncHandler(async (req, res) => {
+  const { hotelId } = req.params;
+  const { type, pricePerNight, availability } = req.body;
+
+  // Validate hotelId
+  if (!hotelId) {
+    throw new ApiError(400, "Hotel ID is required");
+  }
+
+  // Validate type
+  if (!type || typeof type !== "string") {
+    throw new ApiError(400, "Room type is required and must be a string");
   }
 
   // Validate price
-  if (pricePerNight < 0) {
-    throw new ApiError(400, "Price per night cannot be negative");
+  if (pricePerNight === undefined || pricePerNight < 0) {
+    throw new ApiError(
+      400,
+      "Price per night is required and cannot be negative",
+    );
   }
 
-  // Validate availability dates
-  if (!availability.from || !availability.to) {
-    throw new ApiError(400, "Availability must include 'from' and 'to' dates");
+  // Validate availability
+  if (!availability || !availability.from || !availability.to) {
+    throw new ApiError(
+      400,
+      "Availability must include 'from' and 'to' dates in the format 'YYYY-MM-DD'",
+    );
   }
 
-  // Create a new room from the request body
+  // Create room
   const room = await Room.create({
     hotelId,
     type,
@@ -33,10 +77,17 @@ const createRoom = asyncHandler(async (req, res) => {
     availability,
   });
 
-  // Send a success response with the created room
-  return res
-    .status(201)
-    .json(new ApiResponse(201, room, "Room created successfully"));
+  if (!room) {
+    throw new ApiError(500, "Something went wrong while creating the room");
+  }
+
+  // Return success response
+  return res.status(201).json({
+    success: true,
+    statusCode: 201,
+    data: room,
+    message: "Room created successfully",
+  });
 });
 
 // Get all rooms with optional pagination
