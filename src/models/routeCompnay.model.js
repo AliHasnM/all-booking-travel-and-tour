@@ -9,7 +9,6 @@ const routeSchema = new Schema(
     companyId: {
       type: Schema.Types.ObjectId,
       ref: "TravelCompany", // Reference to the TravelCompany model
-      required: true,
     },
     departure: {
       location: {

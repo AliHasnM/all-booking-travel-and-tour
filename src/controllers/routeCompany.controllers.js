@@ -1,26 +1,35 @@
 import { Route } from "../models/routeCompnay.model.js";
-import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
-import { asyncHandler } from "../utils/asyncHandler.js";
 
+import { ApiResponse } from "../utils/ApiResponse.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
 // Create a new route
 const createRoute = asyncHandler(async (req, res) => {
-  const { companyId, departure, arrival, price, seats } = req.body;
+  const { companyId } = req.params;
 
-  // Validate that all required fields are provided
-  if (!companyId || !departure || !arrival || !price || !seats) {
-    throw new ApiError(
-      400,
-      "All fields (companyId, departure, arrival, price, seats) are required",
-    );
+  const { departure, arrival, price, seats } = req.body;
+
+  // Validate companyId
+  if (!companyId) {
+    throw new ApiError(400, "Company ID is required");
+  }
+
+  // Validate departure object
+  if (!departure || !departure.location || !departure.date || !departure.time) {
+    throw new ApiError(400, "Departure must include location, date, and time");
+  }
+
+  // Validate arrival object
+  if (!arrival || !arrival.location || !arrival.date || !arrival.time) {
+    throw new ApiError(400, "Arrival must include location, date, and time");
   }
 
   // Validate price
-  if (price < 0) {
-    throw new ApiError(400, "Price cannot be negative");
+  if (!price || price < 0) {
+    throw new ApiError(400, "Price must be a positive number");
   }
 
-  // Check if seats are in the correct format and availability is a boolean
+  // Validate seats array
   if (
     !Array.isArray(seats) ||
     seats.some(
@@ -33,7 +42,7 @@ const createRoute = asyncHandler(async (req, res) => {
     );
   }
 
-  // Create a new route from the request body
+  // Create route
   const route = await Route.create({
     companyId,
     departure,
@@ -42,15 +51,16 @@ const createRoute = asyncHandler(async (req, res) => {
     seats,
   });
 
-  // Check if the route creation was successful
   if (!route) {
     throw new ApiError(500, "Something went wrong while creating the route");
   }
 
-  // Send a success response with the created route
-  return res
-    .status(201)
-    .json(new ApiResponse(201, route, "Route created successfully"));
+  return res.status(201).json({
+    success: true,
+    statusCode: 201,
+    data: route,
+    message: "Route created successfully",
+  });
 });
 
 const getAllRoutes = asyncHandler(async (req, res, next) => {
@@ -120,6 +130,69 @@ const updateRoute = asyncHandler(async (req, res, next) => {
   }
 });
 
+// const updateRoute = asyncHandler(async (req, res, next) => {
+//   const { companyId, routeId } = req.params;
+//   const { departure, arrival, price, seats } = req.body;
+
+//   console.log("Company ID from params:", companyId);
+//   console.log("Route ID from params:", routeId);
+
+//   // Validate companyId
+//   if (!companyId) {
+//     throw new ApiError(400, "Company ID is required");
+//   }
+
+//   // Validate routeId
+//   if (!routeId) {
+//     throw new ApiError(400, "Route ID is required");
+//   }
+
+//   // Validate departure object
+//   if (!departure || !departure.location || !departure.date || !departure.time) {
+//     throw new ApiError(400, "Departure must include location, date, and time");
+//   }
+
+//   // Validate arrival object
+//   if (!arrival || !arrival.location || !arrival.date || !arrival.time) {
+//     throw new ApiError(400, "Arrival must include location, date, and time");
+//   }
+
+//   // Validate price
+//   if (!price || price < 0) {
+//     throw new ApiError(400, "Price must be a positive number");
+//   }
+
+//   // Validate seats array
+//   if (
+//     !Array.isArray(seats) ||
+//     seats.some(
+//       (seat) => !seat.seatNumber || typeof seat.availability !== "boolean",
+//     )
+//   ) {
+//     throw new ApiError(
+//       400,
+//       "Seats must be an array with seatNumber and availability properties",
+//     );
+//   }
+
+//   // Find the route by companyId and routeId and update it
+//   const route = await Route.findOneAndUpdate(
+//     { _id: routeId, companyId }, // Ensure the companyId matches
+//     { departure, arrival, price, seats },
+//     { new: true },
+//   );
+
+//   if (!route) {
+//     throw new ApiError(404, "Route not found or companyId mismatch");
+//   }
+
+//   return res.status(200).json({
+//     success: true,
+//     statusCode: 200,
+//     message: "Route updated successfully",
+//   });
+// });
+
 // Delete a Route
 const deleteRoute = asyncHandler(async (req, res, next) => {
   try {
@@ -127,7 +200,7 @@ const deleteRoute = asyncHandler(async (req, res, next) => {
     if (!route) {
       throw new ApiError(404, "Route not found");
     }
-    res
+    return res
       .status(200)
       .json(new ApiResponse(200, null, "Route deleted successfully"));
   } catch (error) {

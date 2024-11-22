@@ -14,7 +14,9 @@ const router = Router();
 router.use(verifyJWT);
 
 // Create a new Route
-router.route("/create-route").post(checkRole("TravelCompany"), createRoute);
+router
+  .route("/create-route/:companyId")
+  .post(checkRole("TravelCompany"), createRoute);
 
 // Get all Routes with optional pagination
 router.route("/all-routes").get(checkRole("TravelCompany"), getAllRoutes);
@@ -22,7 +24,6 @@ router.route("/all-routes").get(checkRole("TravelCompany"), getAllRoutes);
 // Get a specific Route by ID
 router.route("/route/:routeId").get(checkRole("TravelCompany"), getRouteById);
 
-// Update Route details
 router
   .route("/update-route/:routeId")
   .patch(checkRole("TravelCompany"), updateRoute);
