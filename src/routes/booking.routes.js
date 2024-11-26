@@ -5,6 +5,12 @@ import {
   getAllBookings,
   updateBookingStatus,
   deleteBooking,
+  getAllTravelCompanies,
+  getAllCompanyRoutes,
+  getTravelCompanyById,
+  getAllHotels,
+  getAllHotelRooms,
+  getHotelById,
 } from "../controllers/booking.controllers.js";
 import { verifyJWT, checkRole } from "../middlewares/auth.middleware.js";
 
@@ -14,7 +20,11 @@ const router = Router();
 router.use(verifyJWT);
 
 // Route to create a new booking (e.g., for logged-in users)
-router.route("/create-booking").post(checkRole("Passenger"), createBooking);
+// router.route("/create-booking").post(checkRole("Passenger"), createBooking);
+// Route to create a new booking (e.g., for logged-in users)
+router
+  .route("/create-booking/:userId/:serviceType/:serviceId")
+  .post(checkRole("Passenger"), createBooking);
 
 // Route to get all bookings with optional pagination (e.g., for admin or booking managers)
 router
@@ -41,5 +51,23 @@ router
 router
   .route("/delete-booking/:bookingId")
   .delete(checkRole("Admin", "TravelCompany", "Hotel"), deleteBooking);
+
+// Passenger Handle Travel Company and Routes
+router
+  .route("/getAllCompanies")
+  .get(checkRole("Passenger", "Admin"), getAllTravelCompanies);
+router
+  .route("/getAllCompanyRoutes/:companyId")
+  .get(checkRole("Passenger"), getAllCompanyRoutes);
+router
+  .route("/getTravelCompany/:companyId")
+  .get(checkRole("Passenger"), getTravelCompanyById);
+
+// Passenger Handle Hotel and Rooms
+router.route("/getAllHotels").get(checkRole("Passenger"), getAllHotels);
+router
+  .route("/getAllHotelRooms/:hotelId")
+  .get(checkRole("Passenger"), getAllHotelRooms);
+router.route("/getHotel/:hotelId").get(checkRole("Passenger"), getHotelById);
 
 export default router;

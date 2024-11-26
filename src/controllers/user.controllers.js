@@ -1,6 +1,7 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.model.js";
+import { Booking } from "../models/booking.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
@@ -412,6 +413,356 @@ const passengerDashboard = async (req, res) => {
     throw new ApiError(500, "Internal Server Error");
   }
 };
+// --------------- Admin Controller for TravelCompany ---------------
+// Add a new travel company
+const addTravelCompany = asyncHandler(async (req, res) => {
+  const { username, password, contactInfo } = req.body;
+
+  if (
+    !username ||
+    !password ||
+    !contactInfo ||
+    !contactInfo.email ||
+    !contactInfo.phone ||
+    !contactInfo.address
+  ) {
+    throw new ApiError(400, "All fields are required");
+  }
+
+  // Ensure only Admin can add a TravelCompany
+  if (req.user.role !== "Admin") {
+    throw new ApiError(403, "Access denied. Admins only.");
+  }
+
+  // Check if a user with the same username or email already exists
+  const existingUser = await User.findOne({
+    $or: [{ username }, { "contactInfo.email": contactInfo.email }],
+  });
+
+  if (existingUser) {
+    throw new ApiError(409, "Username or email already exists");
+  }
+
+  // Create a new TravelCompany user
+  const travelCompany = await User.create({
+    username,
+    password,
+    role: "TravelCompany",
+    contactInfo,
+  });
+
+  // Exclude sensitive fields like password and refreshToken from the response
+  const createdTravelCompany = await User.findById(travelCompany._id).select(
+    "-password -refreshToken",
+  );
+
+  if (!createdTravelCompany) {
+    throw new ApiError(500, "Failed to add the Travel Company");
+  }
+
+  res
+    .status(201)
+    .json(
+      new ApiResponse(
+        201,
+        createdTravelCompany,
+        "Travel Company added successfully",
+      ),
+    );
+});
+
+// Get all travel companies
+const getAllTravelCompanies = asyncHandler(async (req, res) => {
+  // Ensure only Admin can fetch TravelCompany data
+  if (req.user.role !== "Admin") {
+    throw new ApiError(403, "Access denied. Admins only.");
+  }
+
+  // Fetch all users with the role of TravelCompany
+  const travelCompanies = await User.find({ role: "TravelCompany" }).select(
+    "-password -refreshToken",
+  );
+
+  if (!travelCompanies || travelCompanies.length === 0) {
+    throw new ApiError(404, "No Travel Companies found");
+  }
+
+  res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        travelCompanies,
+        "Travel Companies retrieved successfully",
+      ),
+    );
+});
+
+// Update a travel company by ID
+const updateTravelCompany = asyncHandler(async (req, res) => {
+  const { companyId } = req.params;
+  const { username, contactInfo } = req.body;
+
+  if (!companyId) {
+    throw new ApiError(400, "Travel Company ID is required");
+  }
+
+  // Ensure only Admin can update a TravelCompany
+  if (req.user.role !== "Admin") {
+    throw new ApiError(403, "Access denied. Admins only.");
+  }
+
+  // Find the TravelCompany by ID
+  const travelCompany = await User.findOne({
+    _id: companyId,
+    role: "TravelCompany",
+  });
+
+  if (!travelCompany) {
+    throw new ApiError(404, "Travel Company not found");
+  }
+
+  // Update the fields provided in the request
+  if (username) travelCompany.username = username;
+  if (contactInfo) {
+    if (contactInfo.email) travelCompany.contactInfo.email = contactInfo.email;
+    if (contactInfo.phone) travelCompany.contactInfo.phone = contactInfo.phone;
+    if (contactInfo.address)
+      travelCompany.contactInfo.address = contactInfo.address;
+  }
+
+  // Save the updated document
+  const updatedTravelCompany = await travelCompany.save();
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        updatedTravelCompany,
+        "Travel Company updated successfully",
+      ),
+    );
+});
+
+// Delete a travel company by ID
+const deleteTravelCompany = asyncHandler(async (req, res) => {
+  const { companyId } = req.params;
+
+  if (!companyId) {
+    throw new ApiError(400, "Travel Company ID is required");
+  }
+
+  // Ensure only Admin can delete a TravelCompany
+  if (req.user.role !== "Admin") {
+    throw new ApiError(403, "Access denied. Admins only.");
+  }
+
+  // Find and delete the TravelCompany by ID
+  const travelCompany = await User.findOneAndDelete({
+    _id: companyId,
+    role: "TravelCompany",
+  });
+
+  if (!travelCompany) {
+    throw new ApiError(404, "Travel Company not found");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, null, "Travel Company deleted successfully"));
+});
+
+// --------------- Admin Controller for Hotel ---------------
+// Add a new hotel
+const addHotel = asyncHandler(async (req, res) => {
+  const { username, password, contactInfo } = req.body;
+
+  if (
+    !username ||
+    !password ||
+    !contactInfo ||
+    !contactInfo.email ||
+    !contactInfo.phone ||
+    !contactInfo.address
+  ) {
+    throw new ApiError(400, "All fields are required");
+  }
+
+  // Ensure only Admin can add a Hotel
+  if (req.user.role !== "Admin") {
+    throw new ApiError(403, "Access denied. Admins only.");
+  }
+
+  // Check if a user with the same username or email already exists
+  const existingUser = await User.findOne({
+    $or: [{ username }, { "contactInfo.email": contactInfo.email }],
+  });
+
+  if (existingUser) {
+    throw new ApiError(409, "Username or email already exists");
+  }
+
+  // Create a new Hotel user
+  const hotel = await User.create({
+    username,
+    password,
+    role: "Hotel",
+    contactInfo,
+  });
+
+  // Exclude sensitive fields like password and refreshToken from the response
+  const createdHotel = await User.findById(hotel._id).select(
+    "-password -refreshToken",
+  );
+
+  if (!createdHotel) {
+    throw new ApiError(500, "Failed to add the Hotel");
+  }
+
+  return res
+    .status(201)
+    .json(new ApiResponse(201, createdHotel, "Hotel added successfully"));
+});
+
+// Get all Hotels
+const getAllHotel = asyncHandler(async (req, res) => {
+  // Ensure only Admin can fetch Hotel data
+  if (req.user.role !== "Admin") {
+    throw new ApiError(403, "Access denied. Admins only.");
+  }
+
+  // Fetch all users with the role of Hotel
+  const hotels = await User.find({ role: "Hotel" }).select(
+    "-password -refreshToken",
+  );
+
+  if (!hotels || hotels.length === 0) {
+    throw new ApiError(404, "No Hotel found");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, hotels, "Hotels retrieved successfully"));
+});
+
+// Update a Hotel by ID
+const updateHotel = asyncHandler(async (req, res) => {
+  const { hotelId } = req.params;
+  const { username, contactInfo } = req.body;
+
+  if (!hotelId) {
+    throw new ApiError(400, "Hotel ID is required");
+  }
+
+  // Ensure only Admin can update a Hotel
+  if (req.user.role !== "Admin") {
+    throw new ApiError(403, "Access denied. Admins only.");
+  }
+
+  // Find the Hotel by ID
+  const hotel = await User.findOne({
+    _id: hotelId,
+    role: "Hotel",
+  });
+
+  if (!hotel) {
+    throw new ApiError(404, "Hotel not found");
+  }
+
+  // Update the fields provided in the request
+  if (username) hotel.username = username;
+  if (contactInfo) {
+    if (contactInfo.email) hotel.contactInfo.email = contactInfo.email;
+    if (contactInfo.phone) hotel.contactInfo.phone = contactInfo.phone;
+    if (contactInfo.address) hotel.contactInfo.address = contactInfo.address;
+  }
+
+  // Save the updated document
+  const updatedHotel = await hotel.save();
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, updatedHotel, "Hotel updated successfully"));
+});
+
+// Delete a Hotel by ID
+const deleteHotel = asyncHandler(async (req, res) => {
+  const { hotelId } = req.params;
+
+  if (!hotelId) {
+    throw new ApiError(400, "Hotel ID is required");
+  }
+
+  // Ensure only Admin can delete a Hotel
+  if (req.user.role !== "Admin") {
+    throw new ApiError(403, "Access denied. Admins only.");
+  }
+
+  // Find and delete the Hotel by ID
+  const hotel = await User.findOneAndDelete({
+    _id: hotelId,
+    role: "Hotel",
+  });
+
+  if (!hotelId) {
+    throw new ApiError(404, "Hotel not found");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, null, "Hotel deleted successfully"));
+});
+
+// --------------- Admin Controller for Hotel ---------------
+// Get all Hotels
+const getAllPassenger = asyncHandler(async (req, res) => {
+  // Ensure only Admin can fetch Hotel data
+  if (req.user.role !== "Admin") {
+    throw new ApiError(403, "Access denied. Admins only.");
+  }
+
+  // Fetch all users with the role of Passenger
+  const passenger = await User.find({ role: "Passenger" }).select(
+    "-password -refreshToken",
+  );
+
+  if (!passenger || passenger.length === 0) {
+    throw new ApiError(404, "No Passenger found");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, passenger, "Passenger retrieved successfully"));
+});
+
+// Delete a Passenger by ID
+const deletePassenger = asyncHandler(async (req, res) => {
+  const { passengerId } = req.params;
+
+  if (!passengerId) {
+    throw new ApiError(400, "Passenger ID is required");
+  }
+
+  // Ensure only Admin can delete a Hotel
+  if (req.user.role !== "Admin") {
+    throw new ApiError(403, "Access denied. Admins only.");
+  }
+
+  // Find and delete the Passenger by ID
+  const passenger = await User.findOneAndDelete({
+    _id: passengerId,
+    role: "Passenger",
+  });
+
+  if (!passengerId) {
+    throw new ApiError(404, "Passenger not found");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, null, "Passenger deleted successfully"));
+});
 
 export {
   registerUser,
@@ -425,4 +776,14 @@ export {
   travelCompanyDashboard,
   hotelDashboard,
   passengerDashboard,
+  addTravelCompany,
+  deleteTravelCompany,
+  updateTravelCompany,
+  getAllTravelCompanies,
+  addHotel,
+  getAllHotel,
+  updateHotel,
+  deleteHotel,
+  getAllPassenger,
+  deletePassenger,
 };
