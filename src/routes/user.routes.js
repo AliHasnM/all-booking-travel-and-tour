@@ -27,7 +27,7 @@ import { verifyJWT, checkRole } from "../middlewares/auth.middleware.js";
 const router = Router();
 // router.route("/toggle/v/:videoId").post(toggleVideoLike);
 // Register route
-router.route("/register").post(registerUser);
+router.route("/register").post(checkRole("Admin", "Passenger"), registerUser);
 
 // Login route
 router.route("/login").post(loginUser);
@@ -44,10 +44,14 @@ router.use(verifyJWT);
 // Get and update user profile
 router
   .route("/profile")
+<<<<<<< HEAD
   .get(
     checkRole("Admin", "TravelCompany", "Passenger", "Hotel"),
     getUserProfile,
   );
+=======
+  .get(checkRole("Admin", "TravelCompany", "Passenger"), getUserProfile);
+>>>>>>> bb14f8c19cfaf56ea8c3b5d303770d30aeee6beb
 router.route("/profile-update").patch(updateUserProfile);
 
 // Logout route
