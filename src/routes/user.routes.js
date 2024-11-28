@@ -11,6 +11,16 @@ import {
   travelCompanyDashboard,
   hotelDashboard,
   passengerDashboard,
+  addTravelCompany,
+  updateTravelCompany,
+  getAllTravelCompanies,
+  deleteTravelCompany,
+  addHotel,
+  updateHotel,
+  getAllHotel,
+  deleteHotel,
+  getAllPassenger,
+  deletePassenger,
 } from "../controllers/user.controllers.js";
 import { verifyJWT, checkRole } from "../middlewares/auth.middleware.js";
 
@@ -32,7 +42,12 @@ router.route("/change-password").post(verifyJWT, changeCurrentPassword);
 router.use(verifyJWT);
 
 // Get and update user profile
-router.route("/profile").get(getUserProfile);
+router
+  .route("/profile")
+  .get(
+    checkRole("Admin", "TravelCompany", "Passenger", "Hotel"),
+    getUserProfile,
+  );
 router.route("/profile-update").patch(updateUserProfile);
 
 // Logout route
@@ -48,4 +63,27 @@ router
   .route("/passenger-dashboard")
   .get(checkRole("Passenger"), passengerDashboard);
 
+// Admin routes for TravelCompanies
+router.route("/addTravelCompany").post(checkRole("Admin"), addTravelCompany);
+router
+  .route("/getTravelCompanies")
+  .get(checkRole("Admin"), getAllTravelCompanies);
+router
+  .route("/updateTravelCompany/:companyId")
+  .patch(checkRole("Admin"), updateTravelCompany);
+router
+  .route("/deleteTravelCompany/:companyId")
+  .delete(checkRole("Admin"), deleteTravelCompany);
+
+// Admin routes for Hotels
+router.route("/addHotel").post(checkRole("Admin"), addHotel);
+router.route("/getAllHotel").get(checkRole("Admin"), getAllHotel);
+router.route("/updateHotel/:hotelId").patch(checkRole("Admin"), updateHotel);
+router.route("/deleteHotel/:hotelId").delete(checkRole("Admin"), deleteHotel);
+
+// Admin routes for Passenger
+router.route("/getAllPassenger").get(checkRole("Admin"), getAllPassenger);
+router
+  .route("/deletePassenger/:passengerId")
+  .delete(checkRole("Admin"), deletePassenger);
 export default router;

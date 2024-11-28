@@ -19,10 +19,14 @@ router
   .post(checkRole("TravelCompany"), createRoute);
 
 // Get all Routes with optional pagination
-router.route("/all-routes").get(checkRole("TravelCompany"), getAllRoutes);
+router
+  .route("/all-routes")
+  .get(checkRole("TravelCompany", "Passenger"), getAllRoutes);
 
 // Get a specific Route by ID
-router.route("/route/:routeId").get(checkRole("TravelCompany"), getRouteById);
+router
+  .route("/route/:routeId")
+  .get(checkRole("TravelCompany", "Passenger"), getRouteById);
 
 router
   .route("/update-route/:routeId")

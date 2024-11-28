@@ -8,16 +8,17 @@ const bookingSchema = new Schema(
     userId: {
       type: Schema.Types.ObjectId,
       ref: "User", // Reference to the User (Passenger) model
-      required: true,
     },
     serviceType: {
       type: String,
       enum: ["Bus", "Hotel"], // Enum for bus or hotel service types
-      required: true,
     },
     serviceId: {
       type: Schema.Types.ObjectId,
-      required: true,
+      enum: {
+        ref: "TravelCompany",
+        ref: "Hotel",
+      },
       // This could refer to either a route (for bus) or a room (for hotel)
     },
     dateOfBooking: {
@@ -26,7 +27,7 @@ const bookingSchema = new Schema(
     },
     status: {
       type: String,
-      enum: ["confirmed", "canceled", "completed"], // Booking status
+      enum: ["confirmed", "canceled"], // Booking status
       default: "confirmed",
     },
   },
